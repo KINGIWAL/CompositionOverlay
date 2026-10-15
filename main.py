@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QMessageBox,
+    QCheckBox,
 )
 
 from overlay import OverlayWindow
@@ -95,7 +96,8 @@ class MainWindow(QWidget):
         title = QLabel("COMPOSITION OVERLAY")
         title.setStyleSheet("font-size: 15pt; font-weight: bold; padding: 5px;")
         root.addWidget(title)
-
+        self.flip_horizontal = False
+        self.flip_vertical = False
         # -----------------------------------------------------
         # Komposisi
         # -----------------------------------------------------
@@ -188,25 +190,57 @@ class MainWindow(QWidget):
         # -----------------------------------------------------
         # Posisi dan ukuran
         # -----------------------------------------------------
+
         geometry_group = QGroupBox("Posisi dan Ukuran Overlay")
         geometry_layout = QFormLayout(geometry_group)
-
+        
         self.x_spin = QSpinBox()
         self.x_spin.setRange(-10000, 10000)
-
+        
         self.y_spin = QSpinBox()
         self.y_spin.setRange(-10000, 10000)
-
+        
         self.width_spin = QSpinBox()
         self.width_spin.setRange(100, 10000)
-
+        
         self.height_spin = QSpinBox()
         self.height_spin.setRange(100, 10000)
-
+        
+        self.rotation_spin = QSpinBox()
+        self.rotation_spin.setRange(0, 359)
+        self.rotation_spin.setSuffix("°")
+        
+        self.rotation_reset_button = QPushButton("Reset Rotasi")
+        
+        rotation_row = QHBoxLayout()
+        rotation_row.addWidget(self.rotation_spin)
+        rotation_row.addWidget(self.rotation_reset_button)
+        
         geometry_layout.addRow("Posisi X:", self.x_spin)
         geometry_layout.addRow("Posisi Y:", self.y_spin)
         geometry_layout.addRow("Lebar:", self.width_spin)
         geometry_layout.addRow("Tinggi:", self.height_spin)
+        geometry_layout.addRow("Rotasi panduan:", rotation_row)
+        
+        # Checkbox Flip
+        self.flip_horizontal_checkbox = QCheckBox("Flip Horizontal")
+        self.flip_vertical_checkbox = QCheckBox("Flip Vertical")
+        
+        self.flip_horizontal_checkbox.toggled.connect(
+            self.overlay.set_flip_horizontal
+        )
+        self.flip_vertical_checkbox.toggled.connect(
+            self.overlay.set_flip_vertical
+        )
+        
+        geometry_layout.addRow(
+            "Flip Horizontal:", self.flip_horizontal_checkbox
+        )
+        geometry_layout.addRow(
+            "Flip Vertical:", self.flip_vertical_checkbox
+        )
+        
+        # Tambahkan grup setelah seluruh kontrol selesai dibuat
         root.addWidget(geometry_group)
 
         # -----------------------------------------------------
@@ -297,6 +331,10 @@ class MainWindow(QWidget):
         self.y_spin.valueChanged.connect(self.change_position)
         self.width_spin.valueChanged.connect(self.change_size)
         self.height_spin.valueChanged.connect(self.change_size)
+        self.rotation_spin.valueChanged.connect(self.change_rotation)
+        self.rotation_reset_button.clicked.connect(
+            lambda: self.rotation_spin.setValue(0)
+        )
 
         self.thickness_spin.valueChanged.connect(self.change_thickness)
         self.opacity_slider.valueChanged.connect(self.change_opacity)
@@ -314,6 +352,7 @@ class MainWindow(QWidget):
         renderer.set_composition(self.composition_combo.currentText())
         renderer.set_line_width(self.thickness_spin.value())
         renderer.set_line_opacity(self.opacity_slider.value())
+        renderer.set_rotation(self.rotation_spin.value())
 
         self.select_ratio_mode("grid")
         self.select_triangle_mode("tl_br")
@@ -392,6 +431,9 @@ class MainWindow(QWidget):
         self.overlay.set_overlay_size(
             self.width_spin.value(), self.height_spin.value()
         )
+
+    def change_rotation(self, angle):
+        self.overlay.renderer.set_rotation(angle)
 
     def sync_geometry(self, x, y, width, height):
         blockers = [

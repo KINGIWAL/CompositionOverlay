@@ -36,9 +36,8 @@ class CompositionRenderer(QWidget):
         "Diagonal Grid": {
             "type": "diagonals",
         },
-        "Rule of Fifths": {
-        "type": "grid",
-        "divisions": 5,
+        "Fibonacci Grid": {
+            "type": "fibonacci_grid",
         },
     }
 
@@ -48,9 +47,13 @@ class CompositionRenderer(QWidget):
         self.line_color = QColor("white")
         self.line_width = 2
         self.line_opacity = 180
+        self.rotation_angle = 0
         self.golden_ratio_mode = "grid"
         self.golden_triangle_mode = "tl_br"
 
+        self.flip_horizontal = False
+        self.flip_vertical = False
+        
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
@@ -77,6 +80,11 @@ class CompositionRenderer(QWidget):
 
     def set_line_opacity(self, opacity):
         self.line_opacity = max(0, min(255, int(opacity)))
+        self.update()
+
+    def set_rotation(self, angle):
+        """Memutar semua panduan komposisi berdasarkan derajat."""
+        self.rotation_angle = int(angle) % 360
         self.update()
 
     def set_golden_ratio_mode(self, mode):
@@ -113,6 +121,23 @@ class CompositionRenderer(QWidget):
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
 
+        # Rotasi diterapkan pada seluruh pola agar berlaku untuk semua jenis.
+        if (
+            self.rotation_angle % 360
+            or self.flip_horizontal
+            or self.flip_vertical
+        ):
+            painter.translate(width / 2.0, height / 2.0)
+
+            painter.rotate(self.rotation_angle)
+
+            scale_x = -1 if self.flip_horizontal else 1
+            scale_y = -1 if self.flip_vertical else 1
+            painter.scale(scale_x, scale_y)
+
+            painter.translate(-width / 2.0, -height / 2.0)
+
+
         margin = max(1.0, self.line_width / 2.0)
         left, top = margin, margin
         right = max(left + 1, width - margin)
@@ -144,6 +169,10 @@ class CompositionRenderer(QWidget):
                 )
         elif kind == "golden_triangle":
             self._draw_golden_triangle(painter, left, top, right, bottom)
+        elif kind == "fibonacci_grid":
+            self._draw_fibonacci_grid(
+                painter, left, top, right, bottom
+                )
 
         painter.end()
 
@@ -256,3 +285,60 @@ class CompositionRenderer(QWidget):
             start.y() + t * dy,
         )
         painter.drawLine(corner, projection)
+
+    def _draw_fibonacci_grid(self, painter, left, top, right, bottom):
+        """Membuat pembagian persegi panjang bertahap seperti referensi."""
+        width = right - left
+        height = bottom - top
+
+        if width <= 1 or height <= 1:
+            return
+
+        # Pembagian utama.
+        split_x = left + width * 0.382
+        split_y = top + height * 0.5
+
+        painter.drawLine(
+            QPointF(split_x, top),
+            QPointF(split_x, bottom)
+        )
+        painter.drawLine(
+            QPointF(left, split_y),
+            QPointF(right, split_y)
+        )
+
+        # Pembagian bertingkat di area kiri atas.
+        x1 = left + (split_x - left) * 0.5
+        y1 = top + (split_y - top) * 0.5
+
+        painter.drawLine(
+            QPointF(x1, top),
+            QPointF(x1, split_y)
+        )
+        painter.drawLine(
+            QPointF(left, y1),
+            QPointF(split_x, y1)
+        )
+
+        # Pembagian kecil tambahan di dekat pertemuan garis.
+        small_w = split_x - x1
+        small_h = split_y - y1
+
+        x2 = x1 + small_w * 0.5
+        y2 = y1 + small_h * 0.5
+
+        painter.drawLine(
+            QPointF(x2, y1),
+            QPointF(x2, split_y)
+        )
+        painter.drawLine(
+            QPointF(x1, y2),
+            QPointF(split_x, y2)
+        )
+    def set_flip_horizontal(self, enabled):
+        self.flip_horizontal = bool(enabled)
+        self.update()
+    
+    def set_flip_vertical(self, enabled):
+        self.flip_vertical = bool(enabled)
+        self.update()

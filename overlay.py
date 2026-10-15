@@ -122,3 +122,9 @@ class OverlayWindow(QWidget):
     def mouseReleaseEvent(self, event):
         self._drag_position = None
         super().mouseReleaseEvent(event)
+
+    def set_flip_horizontal(self, enabled):
+        self.renderer.set_flip_horizontal(enabled)
+    
+    def set_flip_vertical(self, enabled):
+        self.renderer.set_flip_vertical(enabled)
