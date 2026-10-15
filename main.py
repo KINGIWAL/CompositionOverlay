@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 )
 
 from overlay import OverlayWindow
+from composition import CompositionRenderer
 
 
 class MainWindow(QWidget):
@@ -106,12 +107,7 @@ class MainWindow(QWidget):
         type_row.addWidget(QLabel("Jenis komposisi:"))
 
         self.composition_combo = QComboBox()
-        self.composition_combo.addItems([
-            "Rule of Thirds",
-            "Golden Ratio",
-            "Golden Triangle",
-            "Center Cross",
-        ])
+        self.composition_combo.addItems(list(CompositionRenderer.COMPOSITIONS.keys()))
         type_row.addWidget(self.composition_combo, 1)
         composition_layout.addLayout(type_row)
 
@@ -347,8 +343,9 @@ class MainWindow(QWidget):
 
     def update_composition_panels(self):
         composition = self.composition_combo.currentText()
-        self.ratio_panel.setVisible(composition == "Golden Ratio")
-        self.triangle_panel.setVisible(composition == "Golden Triangle")
+        kind = CompositionRenderer.composition_type(composition)
+        self.ratio_panel.setVisible(kind == "golden_ratio")
+        self.triangle_panel.setVisible(kind == "golden_triangle")
 
     def select_ratio_mode(self, mode):
         self.overlay.renderer.set_golden_ratio_mode(mode)
