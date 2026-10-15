@@ -1,11 +1,5 @@
 
-# overlay.py
-
-from PyQt6.QtCore import (
-    Qt,
-    QPoint,
-    pyqtSignal,
-)
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QSizeGrip
 
 from composition import CompositionRenderer
@@ -31,25 +25,36 @@ class OverlayWindow(QWidget):
             True
         )
 
-        self.setMinimumSize(240, 160)
+        # Ukuran awal: Landscape
+        self.orientation = "Landscape"
+        self.setMinimumSize(426, 240)
         self.setGeometry(100, 100, 800, 450)
 
         self._drag_position = None
         self._locked = False
 
+        # Renderer untuk menggambar garis komposisi
         self.renderer = CompositionRenderer(self)
+
+        # Sudut untuk mengubah ukuran overlay
         self.grip = QSizeGrip(self)
-        self.grip.setToolTip("Tarik untuk mengubah ukuran overlay")
+        self.grip.setToolTip(
+            "Tarik untuk mengubah ukuran overlay"
+        )
 
         self.update_children_geometry()
 
     def update_children_geometry(self):
+        # Renderer mengikuti ukuran overlay
         self.renderer.setGeometry(self.rect())
 
+        # Posisikan grip di sudut kanan bawah
         self.grip.move(
             self.width() - self.grip.width(),
             self.height() - self.grip.height()
         )
+
+        self.grip.raise_()
 
     def resizeEvent(self, event):
         self.update_children_geometry()
@@ -78,7 +83,7 @@ class OverlayWindow(QWidget):
         self._locked = bool(locked)
         self._drag_position = None
 
-        # Saat terkunci, sudut pengubah ukuran disembunyikan.
+        # Saat terkunci, sudut pengubah ukuran disembunyikan
         self.grip.setVisible(not self._locked)
 
         self.setToolTip(
@@ -125,6 +130,25 @@ class OverlayWindow(QWidget):
 
     def set_flip_horizontal(self, enabled):
         self.renderer.set_flip_horizontal(enabled)
-    
+
     def set_flip_vertical(self, enabled):
         self.renderer.set_flip_vertical(enabled)
+
+    def set_orientation(self, orientation):
+        """Mengubah orientasi overlay menjadi Landscape atau Portrait."""
+        if orientation not in ("Landscape", "Portrait"):
+            return
+
+        self.orientation = orientation
+
+        if orientation == "Portrait":
+            # Rasio 9:16
+            self.setMinimumSize(240, 426)
+            self.resize(450, 800)
+        else:
+            # Rasio 16:9
+            self.setMinimumSize(426, 240)
+            self.resize(800, 450)
+
+        self.update_children_geometry()
+        self.emit_geometry()

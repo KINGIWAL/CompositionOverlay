@@ -1,5 +1,7 @@
 import sys
 
+from pathlib import Path
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtCore import Qt, QSignalBlocker
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
@@ -26,6 +28,13 @@ from composition import CompositionRenderer
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
+        # Lokasi logo
+        BASE_DIR = Path(__file__).resolve().parent
+        LOGO_PATH = BASE_DIR / "assets" / "logo.png"
+
+        # Ikon aplikasi
+        if LOGO_PATH.exists():
+            self.setWindowIcon(QIcon(str(LOGO_PATH)))
 
         self.setWindowTitle("Composition Overlay")
         self.setMinimumWidth(390)
@@ -83,7 +92,13 @@ class MainWindow(QWidget):
         """)
 
         self.overlay = OverlayWindow()
+        
+        # Pastikan lokasi logo tersedia sebelum UI dibuat
+        self.BASE_DIR = Path(__file__).resolve().parent
+        self.LOGO_PATH = self.BASE_DIR / "assets" / "logo.png"
 
+        print("LOGO_PATH tersedia:", hasattr(self, "LOGO_PATH"))
+        print("Isi LOGO_PATH:", getattr(self, "LOGO_PATH", "BELUM DIBUAT"))
         # Urutan penting: buat UI dahulu, baru hubungkan sinyal.
         self._build_ui()
         self._connect_signals()
@@ -91,7 +106,38 @@ class MainWindow(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setSpacing(10)
+        
+        # Header logo dan nama aplikasi
+        # logo_label = QLabel()
+        
+        # if self.LOGO_PATH.exists():
+        #     pixmap = QPixmap(str(self.LOGO_PATH))
+        #     logo_label.setPixmap(
+        #         pixmap.scaled(
+        #             56,
+        #             56,
+        #             Qt.AspectRatioMode.KeepAspectRatio,
+        #             Qt.TransformationMode.SmoothTransformation
+        #         )
+        #     )
+        # else:
+        #     logo_label.setText("Logo belum ditemukan")
+        
+        # title_label = QLabel("CompositionOverlay")
+        # title_label.setStyleSheet("""
+        #     font-size: 20px;
+        #     font-weight: bold;
+        #     background-color: transparent;
+        # """)
+        
+        # header_layout = QHBoxLayout()
+        # header_layout.addWidget(logo_label)
+        # header_layout.addWidget(title_label)
+        # header_layout.addStretch()
+        
+        # root.addLayout(header_layout)
+        
+        # root.setSpacing(10)
 
         title = QLabel("COMPOSITION OVERLAY")
         title.setStyleSheet("font-size: 15pt; font-weight: bold; padding: 5px;")
@@ -193,53 +239,67 @@ class MainWindow(QWidget):
 
         geometry_group = QGroupBox("Posisi dan Ukuran Overlay")
         geometry_layout = QFormLayout(geometry_group)
-        
+
         self.x_spin = QSpinBox()
         self.x_spin.setRange(-10000, 10000)
-        
+
         self.y_spin = QSpinBox()
         self.y_spin.setRange(-10000, 10000)
-        
+
         self.width_spin = QSpinBox()
         self.width_spin.setRange(100, 10000)
-        
+
         self.height_spin = QSpinBox()
         self.height_spin.setRange(100, 10000)
-        
+
         self.rotation_spin = QSpinBox()
         self.rotation_spin.setRange(0, 359)
         self.rotation_spin.setSuffix("°")
-        
+
         self.rotation_reset_button = QPushButton("Reset Rotasi")
-        
+
         rotation_row = QHBoxLayout()
         rotation_row.addWidget(self.rotation_spin)
         rotation_row.addWidget(self.rotation_reset_button)
-        
+
         geometry_layout.addRow("Posisi X:", self.x_spin)
         geometry_layout.addRow("Posisi Y:", self.y_spin)
         geometry_layout.addRow("Lebar:", self.width_spin)
         geometry_layout.addRow("Tinggi:", self.height_spin)
         geometry_layout.addRow("Rotasi panduan:", rotation_row)
-        
+
         # Checkbox Flip
         self.flip_horizontal_checkbox = QCheckBox("Flip Horizontal")
         self.flip_vertical_checkbox = QCheckBox("Flip Vertical")
-        
+
         self.flip_horizontal_checkbox.toggled.connect(
             self.overlay.set_flip_horizontal
         )
         self.flip_vertical_checkbox.toggled.connect(
             self.overlay.set_flip_vertical
         )
-        
+
         geometry_layout.addRow(
             "Flip Horizontal:", self.flip_horizontal_checkbox
         )
         geometry_layout.addRow(
             "Flip Vertical:", self.flip_vertical_checkbox
         )
-        
+
+        self.orientation_combo = QComboBox()
+        self.orientation_combo.addItems([
+                "Landscape",
+                "Portrait"
+            ])
+
+        self.orientation_combo.currentTextChanged.connect(
+            self.overlay.set_orientation
+        )
+
+        geometry_layout.addRow(
+            "Orientasi:",
+            self.orientation_combo
+        )
         # Tambahkan grup setelah seluruh kontrol selesai dibuat
         root.addWidget(geometry_group)
 
